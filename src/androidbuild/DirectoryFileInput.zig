@@ -47,8 +47,8 @@ pub fn create(owner: *Build, run: *Run, dir: LazyPath) void {
         // If dir is generated then this will wait for that dir to generate
         dir.addStepDependencies(&self.step);
     } else {
-        // TODO(jae): 2026-06-29: Find all files in directory input
-        @compileError("TODO: Update this in the same way I've updated D8Glob");
+        // Zig 0.17's maker hashes the files of a Run step's directory arguments itself.
+        _ = .{ owner, run, dir };
     }
 }
 

@@ -347,7 +347,12 @@ pub fn createOrGetLibCFile(sdk: *Sdk, compile: *Step.Compile, android_api_level:
         \\# Only needed when targeting MSVC on Windows.
         \\kernel32_lib_dir=
         \\
+    ++ if (builtin.zig_version.major == 0 and builtin.zig_version.minor <= 16)
         \\gcc_dir=
+    else
+        // Zig 0.17 wants every field, and crtbegin_so.o sits beside the CRT in the NDK.
+        \\cc_dir={[crt_dir]s}
+        \\darwin_sdk_dir=
     ;
 
     const include_dir = b.fmt("{s}/usr/include", .{ndk_sysroot_path});

@@ -457,8 +457,7 @@ fn doInstallApk(apk: *Apk) Allocator.Error!*Step.InstallFile {
             .cwd_relative => |sub_path| sub_path,
             .generated => @panic("invalid precompiled library, cannot be generated"),
             .dependency => |dep| dep.sub_path,
-            // TODO(jae): 2026-06-29: Handle .relative in Zig 0.17.X
-            // .relative => @panic("UNHANDLED: invalid relative path"),
+            .relative => |relative| relative.sub_path,
         });
         _ = apk_files.addCopyFile(precompiled_library.path, b.fmt("lib/{s}/{s}", .{ so_dir, precompiled_lib_basename }));
     }
@@ -677,8 +676,15 @@ fn doInstallApk(apk: *Apk) Allocator.Error!*Step.InstallFile {
         if (builtin.zig_version.major == 0 and builtin.zig_version.minor <= 16) {
             D8Glob.create(b, d8, java_classes_output_dir, root_jar);
         } else {
-            // TODO(jae): 2026-06-29: Update D8Glob to collect files as seperate Run artifact
-            @compileError("TODO: Rewrite D8Glob to use Step.Run");
+            // Zig 0.17 has no custom steps to glob *.class files with, so hand d8 them as one jar.
+            const classes_jar_cmd = b.addSystemCommand(&[_][]const u8{ apk.sdk.java_tools.jar, "cf" });
+            classes_jar_cmd.setName(runNameContext("jar classes"));
+            try apk.updatePathWithJdk(classes_jar_cmd);
+            const classes_jar = classes_jar_cmd.addOutputFileArg("classes.jar");
+            classes_jar_cmd.addArg("-C");
+            classes_jar_cmd.addDirectoryArg(java_classes_output_dir);
+            classes_jar_cmd.addArg(".");
+            d8.addFileArg(classes_jar);
         }
 
         // ie. android_sdk/platforms/android-{api-level}/android.jar
